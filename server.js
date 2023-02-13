@@ -2,13 +2,22 @@ import express from "express"
 import path from "path"
 import { fileURLToPath } from "url"
 import rootRoutes from "./routes/root.js"
+import { logger } from "./middleware/logger.js"
+import { errorHandler } from "./middleware/errorHandler.js"
+import cookieParser from "cookie-parser"
+import cors from "cors"
+import corsOptions from "./config/corsOption.js"
 
-const app = express()
 const PORT = process.env.PORT || 3500
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
+const app = express()
+
+app.use(logger)
+app.use(cors(corsOptions))
 app.use(express.json())
+app.use(cookieParser())
 
 // tell express where to find static files
 app.use("/", express.static(path.join(__dirname, "/public")))
@@ -27,5 +36,8 @@ app.all("*", (req, res) => {
     res.type("txt").send("404 Not Found")
   }
 })
+
+// custom error handler always at the bottom
+app.use(errorHandler)
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
