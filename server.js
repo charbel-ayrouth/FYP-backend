@@ -11,6 +11,7 @@ import cors from "cors"
 import corsOptions from "./config/corsOption.js"
 import connectDB from "./config/dbConn.js"
 import mongoose from "mongoose"
+import userRoutes from "./routes/userRoutes.js"
 
 const PORT = process.env.PORT || 3500
 const __filename = fileURLToPath(import.meta.url)
@@ -30,6 +31,7 @@ app.use("/", express.static(path.join(__dirname, "/public")))
 
 // routing all request
 app.use("/", rootRoutes)
+app.use("/users", userRoutes)
 
 // routing bad request
 app.all("*", (req, res) => {
