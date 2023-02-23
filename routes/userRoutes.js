@@ -1,21 +1,24 @@
-import express from "express"
+import express from 'express'
 import {
   getAllUsers,
   createNewUser,
-  updateUser,
+  adminUpdateUser,
   deleteUser,
-} from "../controllers/usersController.js"
-import verifyJWT from "../middleware/verifyJWT.js"
+  updateUser,
+} from '../controllers/usersController.js'
+import verifyJWT from '../middleware/verifyJWT.js'
 
 const router = express.Router()
 
-router.use(verifyJWT)
+// router.use(verifyJWT)
 
 router
-  .route("/")
+  .route('/')
   .get(getAllUsers)
   .post(createNewUser)
-  .patch(updateUser)
+  .patch(adminUpdateUser)
   .delete(deleteUser)
+
+router.route('/:id').patch(updateUser)
 
 export default router
