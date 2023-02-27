@@ -53,7 +53,7 @@ const login = asyncHandler(async (req, res) => {
 })
 
 // @desc Refresh
-// @route Post /auth/refresh
+// @route GET /auth/refresh
 // @access Public - because token has expired
 const refresh = (req, res) => {
   const cookies = req.cookies

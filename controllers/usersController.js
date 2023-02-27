@@ -25,14 +25,20 @@ const createNewUser = asyncHandler(async (req, res) => {
   }
 
   if (username) {
-    //check for duplicate (called exec because we are passing username in)
-    const duplicateUsername = await User.findOne({ username }).lean().exec()
+    //check for duplicate (called exec because we are passing username in) ,
+    const duplicateUsername = await User.findOne({ username })
+      .collation({ locale: 'en', strength: 2 }) // collation used to check for lowercase and uppercase letter
+      .lean()
+      .exec()
     if (duplicateUsername) {
       return res.status(409).json({ message: 'Duplicate username' })
     }
   }
 
-  const duplicateEmail = await User.findOne({ email }).lean().exec()
+  const duplicateEmail = await User.findOne({ email })
+    .collation({ locale: 'en', strength: 2 })
+    .lean()
+    .exec()
   if (duplicateEmail) {
     return res.status(409).json({ message: 'Duplicate email' })
   }
@@ -73,7 +79,7 @@ const adminUpdateUser = asyncHandler(async (req, res) => {
 
   // if (username) {
   //   // Check for duplicate
-  //   const duplicateUsername = await User.findOne({ username }).lean().exec()
+  //   const duplicateUsername = await User.findOne({ username }).collation({ locale: 'en', strength: 2 }).lean().exec()
   //   // Allow updates to the original user
   //   if (duplicateUsername && duplicateUsername?._id.toString() !== id) {
   //     // trying to update to a username that already exist
@@ -81,7 +87,10 @@ const adminUpdateUser = asyncHandler(async (req, res) => {
   //   }
   // }
 
-  const duplicateEmail = await User.findOne({ email }).lean().exec()
+  const duplicateEmail = await User.findOne({ email })
+    .collation({ locale: 'en', strength: 2 })
+    .lean()
+    .exec()
   if (duplicateEmail && duplicateEmail?._id.toString() !== id) {
     return res.status(409).json({ message: 'Duplicate email' })
   }
@@ -146,7 +155,10 @@ const updateUser = asyncHandler(async (req, res) => {
   }
 
   // Check for duplicate
-  const duplicate = await User.findOne({ username }).lean().exec()
+  const duplicate = await User.findOne({ username })
+    .collation({ locale: 'en', strength: 2 })
+    .lean()
+    .exec()
 
   // Allow updates to the original user
   if (duplicate && duplicate?._id.toString() !== id) {
