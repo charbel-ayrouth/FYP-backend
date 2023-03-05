@@ -51,7 +51,7 @@ const updateTopic = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'All fields are required' })
   }
 
-  const topic = TopicOfInterest.findById(id).exec()
+  const topic = await TopicOfInterest.findById(id).exec()
 
   if (!topic) return res.status(400).json({ message: 'Topic not found' })
 
@@ -65,7 +65,7 @@ const updateTopic = asyncHandler(async (req, res) => {
 
   topic.title = title
 
-  const updatedTopic = topic.save()
+  const updatedTopic = await topic.save()
 
   res.json({ message: `${updatedTopic.title} updated` })
 })
@@ -86,7 +86,7 @@ const deleteTopic = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: 'Topic not found' })
   }
 
-  const result = await TopicOfInterest.deleteOne()
+  const result = await topic.deleteOne()
 
   const reply = `${result.title} with ID ${result._id} deleted`
 

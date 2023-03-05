@@ -28,7 +28,7 @@ const createNewDomain = asyncHandler(async (req, res) => {
     return res.status(409).json({ message: 'Duplicate title' })
   }
 
-  const domain = await DomainOfInterest.create({ title, example })
+  const domain = await DomainOfApplication.create({ title, example })
 
   if (domain) {
     res.status(201).json({ message: `New domain: ${domain.title} created` })
@@ -43,7 +43,7 @@ const createNewDomain = asyncHandler(async (req, res) => {
 const updateDomain = async (req, res) => {
   const { id, title, example } = req.body
 
-  if (!id || !title || !example) {
+  if (!id || !title) {
     return res.status(400).json({ message: 'All fields are required' })
   }
 
@@ -63,7 +63,9 @@ const updateDomain = async (req, res) => {
   }
 
   domain.title = title
-  domain.example = example
+  if (example) {
+    domain.example = example
+  }
 
   const updatedDomain = await domain.save()
 
