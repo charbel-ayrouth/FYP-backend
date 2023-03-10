@@ -15,12 +15,37 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
+    enum: ['Student', 'Supervisor', 'Admin'],
     default: 'Student',
   },
   active: {
     type: Boolean,
     default: true,
   },
+  topics: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'TopicOfInterest',
+    },
+  ],
+  domains: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'DomainOfApplication',
+    },
+  ],
+  connections: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+  ],
+  connectionRequest: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+  ],
 })
 
 const User = mongoose.model('User', userSchema)

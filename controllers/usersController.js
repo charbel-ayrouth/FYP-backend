@@ -63,7 +63,8 @@ const createNewUser = asyncHandler(async (req, res) => {
 // @route Patch /users
 // @access Private
 const adminUpdateUser = asyncHandler(async (req, res) => {
-  const { id, email, role, active } = req.body
+  const { id } = req.params
+  const { email, role, active } = req.body
 
   // Confirm data
   if (!id || !email || !role || typeof active !== 'boolean') {
@@ -76,16 +77,6 @@ const adminUpdateUser = asyncHandler(async (req, res) => {
   if (!user) {
     return res.status(400).json({ message: 'User not found' })
   }
-
-  // if (username) {
-  //   // Check for duplicate
-  //   const duplicateUsername = await User.findOne({ username }).collation({ locale: 'en', strength: 2 }).lean().exec()
-  //   // Allow updates to the original user
-  //   if (duplicateUsername && duplicateUsername?._id.toString() !== id) {
-  //     // trying to update to a username that already exist
-  //     return res.status(409).json({ message: 'Duplicate username' })
-  //   }
-  // }
 
   const duplicateEmail = await User.findOne({ email })
     .collation({ locale: 'en', strength: 2 })
@@ -108,7 +99,7 @@ const adminUpdateUser = asyncHandler(async (req, res) => {
 // @route Delete /users
 // @access Private
 const deleteUser = asyncHandler(async (req, res) => {
-  const { id } = req.body
+  const { id } = req.params
 
   if (!id) {
     return res.status(400).json({ message: 'User ID Required' })
@@ -130,6 +121,7 @@ const deleteUser = asyncHandler(async (req, res) => {
 // @desc Update a user
 // @route PATCH /users
 // @access Private
+// ! not used and not complete
 const updateUser = asyncHandler(async (req, res) => {
   // req.params.id
   const { id, username, roles, active, password } = req.body

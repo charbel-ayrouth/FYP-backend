@@ -11,11 +11,8 @@ const router = express.Router()
 
 router.use(verifyJWT)
 
-router
-  .route('/')
-  .get(getAllDomains)
-  .post(createNewDomain)
-  .patch(updateDomain)
-  .delete(deleteDomain)
+router.route('/').get(getAllDomains).post(createNewDomain)
+
+router.route('/:id').patch(updateDomain).delete(deleteDomain)
 
 export default router

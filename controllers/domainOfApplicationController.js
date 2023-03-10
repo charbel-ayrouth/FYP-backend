@@ -41,7 +41,8 @@ const createNewDomain = asyncHandler(async (req, res) => {
 // @route PATCH /domains
 // @access Private
 const updateDomain = async (req, res) => {
-  const { id, title, example } = req.body
+  const { id } = req.params
+  const { title, example } = req.body
 
   if (!id || !title) {
     return res.status(400).json({ message: 'All fields are required' })
@@ -76,7 +77,7 @@ const updateDomain = async (req, res) => {
 // @route DELETE /users
 // @access Private
 const deleteDomain = async (req, res) => {
-  const { id } = req.body
+  const { id } = req.params
 
   if (!id) {
     return res.status(400).json({ message: 'Domain ID Required' })

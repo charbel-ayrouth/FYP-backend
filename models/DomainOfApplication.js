@@ -1,14 +1,17 @@
 import mongoose from 'mongoose'
 
-const domainOfApplicationSchema = new mongoose.Schema({
-  title: {
-    type: String,
-    required: true,
+const domainOfApplicationSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: true,
+    },
+    example: {
+      type: String,
+    },
   },
-  example: {
-    type: String,
-  },
-})
+  { timestamps: true }
+)
 
 const DomainOfApplication = mongoose.model(
   'DomainOfApplication',

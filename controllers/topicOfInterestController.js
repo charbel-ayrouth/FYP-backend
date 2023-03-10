@@ -1,5 +1,6 @@
 import TopicOfInterest from '../models/TopicOfInterest.js'
 import asyncHandler from 'express-async-handler'
+import User from '../models/User.js'
 
 // @desc Get all topics
 // @route Get /topics
@@ -45,7 +46,8 @@ const createNewTopic = asyncHandler(async (req, res) => {
 // @route Patch /topics
 // @access Private
 const updateTopic = asyncHandler(async (req, res) => {
-  const { id, title } = req.body
+  const { id } = req.params
+  const { title } = req.body
 
   if (!id || !title) {
     return res.status(400).json({ message: 'All fields are required' })
@@ -74,7 +76,7 @@ const updateTopic = asyncHandler(async (req, res) => {
 // @route Delete /topics
 // @access Private
 const deleteTopic = asyncHandler(async (req, res) => {
-  const { id } = req.body
+  const { id } = req.params
 
   if (!id) {
     return res.status(400).json({ message: 'Topic id required' })
@@ -93,4 +95,32 @@ const deleteTopic = asyncHandler(async (req, res) => {
   res.json(reply)
 })
 
-export { getAllTopics, createNewTopic, updateTopic, deleteTopic }
+// @desc add array of topics to user
+// @route Post /user/:userId
+// @access Private
+const addTopicsToUser = asyncHandler(async (req, res) => {
+  const { userId } = req.params
+  const { topics } = req.body
+
+  if (!topics.length === 0) {
+    return res.status(400).json({ message: 'Topics are required' })
+  }
+
+  const updatedUser = await User.findByIdAndUpdate(userId, {
+    $push: { topics: topics },
+  })
+
+  if (updatedUser) {
+    res.status(201).json({ message: `topics added` })
+  } else {
+    res.status(400).json({ message: 'error' })
+  }
+})
+
+export {
+  getAllTopics,
+  createNewTopic,
+  updateTopic,
+  deleteTopic,
+  addTopicsToUser,
+}
