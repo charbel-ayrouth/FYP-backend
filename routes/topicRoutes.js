@@ -7,12 +7,17 @@ import {
   addTopicsToUser,
 } from '../controllers/topicOfInterestController.js'
 import verifyJWT from '../middleware/verifyJWT.js'
+import verifyRole from '../middleware/verifyRoles.js'
+import ROLES from '../config/roles.js'
 
 const router = express.Router()
 
-// router.use(verifyJWT)
+router.use(verifyJWT)
 
-router.route('/').get(getAllTopics).post(createNewTopic)
+router
+  .route('/')
+  .get(verifyRole(ROLES.Supervisor, ROLES.Student), getAllTopics)
+  .post(createNewTopic)
 
 router.route('/:id').patch(updateTopic).delete(deleteTopic)
 
