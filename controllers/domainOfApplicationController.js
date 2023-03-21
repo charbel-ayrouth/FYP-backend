@@ -1,5 +1,6 @@
 import DomainOfApplication from '../models/DomainOfApplication.js'
 import asyncHandler from 'express-async-handler'
+import User from '../models/User.js'
 
 // @desc Get all domains of app
 // @route Get /domains
@@ -96,4 +97,81 @@ const deleteDomain = async (req, res) => {
   res.json(reply)
 }
 
-export { getAllDomains, createNewDomain, updateDomain, deleteDomain }
+//! /user
+// @desc add array of domains to user
+// @route Post /user/:userId
+// @access Private
+const addDomainsToUser = asyncHandler(async (req, res) => {
+  const { userId } = req.params
+  const { domainsIds } = req.body
+
+  if (domainsIds.length !== 0) {
+    return res.status(400).json({ message: 'Domains are required' })
+  }
+
+  const user = await User.findById(userId)
+
+  // Find the domains in the database
+  const domains = await DomainOfApplication.find({
+    _id: { $in: domainsIds },
+  })
+
+  // Check if all domains exist
+  if (domains.length !== domainsIds.length) {
+    return res.status(400).json({ message: 'One or more domain not found' })
+  }
+
+  // Add the domains to the user's domains array
+  domains.forEach((domain) => {
+    if (user.domains.includes(domain._id)) {
+      user.domains.push(domain._id)
+    }
+  })
+
+  const updatedUser = await user.save()
+
+  if (updatedUser) {
+    res.status(201).json({ message: `Domains added to user profile` })
+  } else {
+    res.status(400).json({ message: 'Server error' })
+  }
+})
+
+// @desc add array of domains to user
+// @route Patch /user/:userId
+// @access Private
+const updateDomainsForUser = asyncHandler(async (req, res) => {
+  const { userId } = req.params
+  const { domainsIds } = req.body
+
+  const user = await User.findById(userId)
+
+  // Find the domains in the database
+  const domains = await TopicOfInterest.find({
+    _id: { $in: domainsIds },
+  })
+
+  // Check if all domains exist
+  if (domains.length !== domainsIds.length) {
+    return res.status(400).json({ message: 'One or more domain not found' })
+  }
+
+  user.domains = domains.map((domain) => domain._id)
+
+  const updatedUser = await user.save()
+
+  if (updatedUser) {
+    res.status(201).json({ message: `Domains updated for user profile` })
+  } else {
+    res.status(400).json({ message: 'Server error' })
+  }
+})
+
+export {
+  getAllDomains,
+  createNewDomain,
+  updateDomain,
+  deleteDomain,
+  addDomainsToUser,
+  updateDomainsForUser,
+}

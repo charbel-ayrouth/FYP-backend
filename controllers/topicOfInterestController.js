@@ -95,25 +95,73 @@ const deleteTopic = asyncHandler(async (req, res) => {
   res.json(reply)
 })
 
+//! /user
 // @desc add array of topics to user
 // @route Post /user/:userId
 // @access Private
 const addTopicsToUser = asyncHandler(async (req, res) => {
   const { userId } = req.params
-  const { topics } = req.body
+  const { topicsIds } = req.body
 
-  if (!topics.length === 0) {
+  if (topicsIds.length !== 0) {
     return res.status(400).json({ message: 'Topics are required' })
   }
 
-  const updatedUser = await User.findByIdAndUpdate(userId, {
-    $push: { topics: topics },
+  const user = await User.findById(userId)
+
+  // Find the topics in the database
+  const topics = await TopicOfInterest.find({
+    _id: { $in: topicsIds },
   })
 
+  // Check if all topics exist
+  if (topics.length !== topicsIds.length) {
+    return res.status(400).json({ message: 'One or more topics not found' })
+  }
+
+  // Add the topics to the user's topics array
+  topics.forEach((topic) => {
+    if (user.topics.includes(topic._id)) {
+      user.topics.push(topic._id)
+    }
+  })
+
+  const updatedUser = await user.save()
+
   if (updatedUser) {
-    res.status(201).json({ message: `topics added` })
+    res.status(201).json({ message: `Topics added to user profile` })
   } else {
-    res.status(400).json({ message: 'error' })
+    res.status(400).json({ message: 'Server error' })
+  }
+})
+
+// @desc add array of topics to user
+// @route Patch /user/:userId
+// @access Private
+const updateTopicsForUser = asyncHandler(async (req, res) => {
+  const { userId } = req.params
+  const { topicsIds } = req.body
+
+  const user = await User.findById(userId)
+
+  // Find the topics in the database
+  const topics = await TopicOfInterest.find({
+    _id: { $in: topicsIds },
+  })
+
+  // Check if all topics exist
+  if (topics.length !== topicsIds.length) {
+    return res.status(400).json({ message: 'One or more topics not found' })
+  }
+
+  user.topics = topics.map((topic) => topic._id)
+
+  const updatedUser = await user.save()
+
+  if (updatedUser) {
+    res.status(201).json({ message: `Topics updated for user profile` })
+  } else {
+    res.status(400).json({ message: 'Server error' })
   }
 })
 
@@ -123,4 +171,5 @@ export {
   updateTopic,
   deleteTopic,
   addTopicsToUser,
+  updateTopicsForUser,
 }

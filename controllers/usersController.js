@@ -6,7 +6,14 @@ import bcrypt from 'bcrypt'
 // @route Get /users
 // @access Private
 const getAllUsers = asyncHandler(async (req, res) => {
-  const users = await User.find().select('-password').lean()
+  const PAGE_SIZE = 3
+  const page = parseInt(req.query.page || '0')
+
+  const users = await User.find()
+    .select('-password')
+    .lean()
+    .limit(PAGE_SIZE)
+    .skip(PAGE_SIZE * page)
 
   if (!users?.length) {
     return res.status(400).json({ mesage: 'No users found' })
