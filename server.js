@@ -15,6 +15,7 @@ import userRoutes from './routes/userRoutes.js'
 import authRoutes from './routes/authRoutes.js'
 import topicRoutes from './routes/topicRoutes.js'
 import domainRoutes from './routes/domainRoutes.js'
+import profileRoutes from './routes/profileRoutes.js'
 
 const PORT = process.env.PORT || 3500
 const __filename = fileURLToPath(import.meta.url)
@@ -38,6 +39,7 @@ app.use('/users', userRoutes)
 app.use('/auth', authRoutes)
 app.use('/topics', topicRoutes)
 app.use('/domains', domainRoutes)
+app.use('/profile', profileRoutes)
 
 // routing bad request
 app.all('*', (req, res) => {
