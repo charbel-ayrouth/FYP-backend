@@ -96,14 +96,30 @@ const deleteTopic = asyncHandler(async (req, res) => {
 })
 
 //! /user
-// @desc add array of topics to user
+// @desc get array of topics of a user
+// @route GET /user/:userId
+// @access Private
+const getTopicsOfUser = asyncHandler(async (req, res) => {
+  const { userId } = req.params
+
+  const user = await User.findById(userId)
+
+  const topics = user.topics
+
+  // if (!topics?.length) {
+  //   return res.status(400).json({ message: 'No topics found' })
+  // }
+  res.json(topics)
+})
+
+// @desc add or update array of topics for user
 // @route Post /user/:userId
 // @access Private
-const addTopicsToUser = asyncHandler(async (req, res) => {
+const addOrUpdateTopicsForUser = asyncHandler(async (req, res) => {
   const { userId } = req.params
-  const { topicsIds } = req.body
+  const { selectedTopics } = req.body
 
-  if (topicsIds.length !== 0) {
+  if (selectedTopics.length === 0) {
     return res.status(400).json({ message: 'Topics are required' })
   }
 
@@ -111,50 +127,25 @@ const addTopicsToUser = asyncHandler(async (req, res) => {
 
   // Find the topics in the database
   const topics = await TopicOfInterest.find({
-    _id: { $in: topicsIds },
+    _id: { $in: selectedTopics },
   })
 
   // Check if all topics exist
-  if (topics.length !== topicsIds.length) {
+  if (topics.length !== selectedTopics.length) {
     return res.status(400).json({ message: 'One or more topics not found' })
   }
 
-  // Add the topics to the user's topics array
+  // Remove any existing topics that were not selected
+  user.topics = user.topics.filter((topic) =>
+    selectedTopics.includes(topic.toString())
+  )
+
+  // Add the selected topics to the user's topics array
   topics.forEach((topic) => {
-    if (user.topics.includes(topic._id)) {
+    if (!user.topics.includes(topic._id)) {
       user.topics.push(topic._id)
     }
   })
-
-  const updatedUser = await user.save()
-
-  if (updatedUser) {
-    res.status(201).json({ message: `Topics added to user profile` })
-  } else {
-    res.status(400).json({ message: 'Server error' })
-  }
-})
-
-// @desc add array of topics to user
-// @route Patch /user/:userId
-// @access Private
-const updateTopicsForUser = asyncHandler(async (req, res) => {
-  const { userId } = req.params
-  const { topicsIds } = req.body
-
-  const user = await User.findById(userId)
-
-  // Find the topics in the database
-  const topics = await TopicOfInterest.find({
-    _id: { $in: topicsIds },
-  })
-
-  // Check if all topics exist
-  if (topics.length !== topicsIds.length) {
-    return res.status(400).json({ message: 'One or more topics not found' })
-  }
-
-  user.topics = topics.map((topic) => topic._id)
 
   const updatedUser = await user.save()
 
@@ -170,6 +161,6 @@ export {
   createNewTopic,
   updateTopic,
   deleteTopic,
-  addTopicsToUser,
-  updateTopicsForUser,
+  getTopicsOfUser,
+  addOrUpdateTopicsForUser,
 }

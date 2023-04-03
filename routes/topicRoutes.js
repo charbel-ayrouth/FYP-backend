@@ -4,8 +4,10 @@ import {
   createNewTopic,
   updateTopic,
   deleteTopic,
-  addTopicsToUser,
-  updateTopicsForUser,
+  // addTopicsToUser,
+  // updateTopicsForUser,
+  getTopicsOfUser,
+  addOrUpdateTopicsForUser,
 } from '../controllers/topicOfInterestController.js'
 import verifyJWT from '../middleware/verifyJWT.js'
 import verifyRoles from '../middleware/verifyRoles.js'
@@ -30,13 +32,13 @@ router
   .route('/user/:userId')
   .post(
     verifyRoles(ROLES.Student, ROLES.Supervisor),
-    // verifyUser,
-    addTopicsToUser
+    verifyUser,
+    addOrUpdateTopicsForUser
   )
-  .patch(
+  .get(
     verifyRoles(ROLES.Student, ROLES.Supervisor),
-    // verifyUser,
-    updateTopicsForUser
+    verifyUser,
+    getTopicsOfUser
   )
 
 export default router
