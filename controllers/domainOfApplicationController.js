@@ -1,6 +1,8 @@
 import DomainOfApplication from '../models/DomainOfApplication.js'
 import asyncHandler from 'express-async-handler'
 import User from '../models/User.js'
+import Notification from '../models/Notifications.js'
+import notificationsType from '../config/notificationsType.js'
 
 // @desc Get all domains of app
 // @route Get /domains
@@ -32,6 +34,35 @@ const createNewDomain = asyncHandler(async (req, res) => {
   const domain = await DomainOfApplication.create({ title, example })
 
   if (domain) {
+    // Send notifications to all the students and supervisors
+    const users = await User.find({ role: { $in: ['Student', 'Supervisor'] } })
+      .lean()
+      .exec()
+
+    const notifications = []
+
+    const existingNotifications = await Notification.find({
+      type: notificationsType.newDomain,
+    })
+
+    users.forEach((user) => {
+      const notificationExists = existingNotifications.some(
+        (existingNotification) =>
+          existingNotification.user.toString() === user._id.toString()
+      )
+      if (!notificationExists) {
+        const notification = {
+          user: user._id,
+          message: `New domain of application has been added`,
+          read: false,
+          type: notificationsType.newDomain,
+        }
+        notifications.push(notification)
+      }
+    })
+
+    await Notification.insertMany(notifications)
+
     res.status(201).json({ message: `New domain: ${domain.title} created` })
   } else {
     res.status(400).json({ message: 'Invalid domain data received' })
@@ -71,6 +102,37 @@ const updateDomain = async (req, res) => {
 
   const updatedDomain = await domain.save()
 
+  if (updateDomain) {
+    // Send notifications to all the students and supervisors
+    const users = await User.find({ role: { $in: ['Student', 'Supervisor'] } })
+      .lean()
+      .exec()
+
+    const notifications = []
+
+    const existingNotifications = await Notification.find({
+      type: notificationsType.updateDomain,
+    })
+
+    users.forEach((user) => {
+      const notificationExists = existingNotifications.some(
+        (existingNotification) =>
+          existingNotification.user.toString() === user._id.toString()
+      )
+      if (!notificationExists) {
+        const notification = {
+          user: user._id,
+          message: `A domain of application has been updated`,
+          read: false,
+          type: notificationsType.updateDomain,
+        }
+        notifications.push(notification)
+      }
+    })
+
+    await Notification.insertMany(notifications)
+  }
+
   res.json(`'${updatedDomain.title}' updated`)
 }
 
@@ -98,14 +160,27 @@ const deleteDomain = async (req, res) => {
 }
 
 //! /user
-// @desc add array of domains to user
+// @desc get array of domains of a user
+// @route GET /user/:userId
+// @access Private
+const getDomainsOfUser = asyncHandler(async (req, res) => {
+  const { userId } = req.params
+
+  const user = await User.findById(userId)
+
+  const domains = user.domains
+
+  res.json(domains)
+})
+
+// @desc add or update array of domains for user
 // @route Post /user/:userId
 // @access Private
-const addDomainsToUser = asyncHandler(async (req, res) => {
+const addOrUpdateDomainsForUser = asyncHandler(async (req, res) => {
   const { userId } = req.params
-  const { domainsIds } = req.body
+  const { selectedDomains } = req.body
 
-  if (domainsIds.length !== 0) {
+  if (selectedDomains.length === 0) {
     return res.status(400).json({ message: 'Domains are required' })
   }
 
@@ -113,50 +188,25 @@ const addDomainsToUser = asyncHandler(async (req, res) => {
 
   // Find the domains in the database
   const domains = await DomainOfApplication.find({
-    _id: { $in: domainsIds },
+    _id: { $in: selectedDomains },
   })
 
   // Check if all domains exist
-  if (domains.length !== domainsIds.length) {
-    return res.status(400).json({ message: 'One or more domain not found' })
+  if (domains.length !== selectedDomains.length) {
+    return res.status(400).json({ message: 'One or more domains not found' })
   }
 
-  // Add the domains to the user's domains array
+  // Remove any existing domains that were not selected
+  user.domains = user.domains.filter((domain) =>
+    selectedDomains.includes(domain.toString())
+  )
+
+  // Add the selected domains to the user's domains array
   domains.forEach((domain) => {
-    if (user.domains.includes(domain._id)) {
+    if (!user.domains.includes(domain._id)) {
       user.domains.push(domain._id)
     }
   })
-
-  const updatedUser = await user.save()
-
-  if (updatedUser) {
-    res.status(201).json({ message: `Domains added to user profile` })
-  } else {
-    res.status(400).json({ message: 'Server error' })
-  }
-})
-
-// @desc add array of domains to user
-// @route Patch /user/:userId
-// @access Private
-const updateDomainsForUser = asyncHandler(async (req, res) => {
-  const { userId } = req.params
-  const { domainsIds } = req.body
-
-  const user = await User.findById(userId)
-
-  // Find the domains in the database
-  const domains = await TopicOfInterest.find({
-    _id: { $in: domainsIds },
-  })
-
-  // Check if all domains exist
-  if (domains.length !== domainsIds.length) {
-    return res.status(400).json({ message: 'One or more domain not found' })
-  }
-
-  user.domains = domains.map((domain) => domain._id)
 
   const updatedUser = await user.save()
 
@@ -172,6 +222,6 @@ export {
   createNewDomain,
   updateDomain,
   deleteDomain,
-  addDomainsToUser,
-  updateDomainsForUser,
+  getDomainsOfUser,
+  addOrUpdateDomainsForUser,
 }

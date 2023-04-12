@@ -4,8 +4,6 @@ import {
   createNewTopic,
   updateTopic,
   deleteTopic,
-  // addTopicsToUser,
-  // updateTopicsForUser,
   getTopicsOfUser,
   addOrUpdateTopicsForUser,
 } from '../controllers/topicOfInterestController.js'

@@ -4,8 +4,8 @@ import {
   createNewDomain,
   updateDomain,
   deleteDomain,
-  addDomainsToUser,
-  updateDomainsForUser,
+  getDomainsOfUser,
+  addOrUpdateDomainsForUser,
 } from '../controllers/domainOfApplicationController.js'
 import verifyJWT from '../middleware/verifyJWT.js'
 import verifyRoles from '../middleware/verifyRoles.js'
@@ -30,13 +30,13 @@ router
   .route('/user/:userId')
   .post(
     verifyRoles(ROLES.Student, ROLES.Supervisor),
-    // verifyUser,
-    addDomainsToUser
+    verifyUser,
+    addOrUpdateDomainsForUser
   )
-  .patch(
+  .get(
     verifyRoles(ROLES.Student, ROLES.Supervisor),
-    // verifyUser,
-    updateDomainsForUser
+    verifyUser,
+    getDomainsOfUser
   )
 
 export default router

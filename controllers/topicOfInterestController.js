@@ -1,6 +1,8 @@
 import TopicOfInterest from '../models/TopicOfInterest.js'
 import asyncHandler from 'express-async-handler'
 import User from '../models/User.js'
+import Notification from '../models/Notifications.js'
+import notificationsType from '../config/notificationsType.js'
 
 // @desc Get all topics
 // @route Get /topics
@@ -36,6 +38,35 @@ const createNewTopic = asyncHandler(async (req, res) => {
   const topic = await TopicOfInterest.create({ title })
 
   if (topic) {
+    // Send notifications to all the students and supervisors
+    const users = await User.find({ role: { $in: ['Student', 'Supervisor'] } })
+      .lean()
+      .exec()
+
+    const notifications = []
+
+    const existingNotifications = await Notification.find({
+      type: notificationsType.newTopic,
+    })
+
+    users.forEach((user) => {
+      const notificationExists = existingNotifications.some(
+        (existingNotification) =>
+          existingNotification.user.toString() === user._id.toString()
+      )
+      if (!notificationExists) {
+        const notification = {
+          user: user._id,
+          message: `New Topic has been added`,
+          read: false,
+          type: notificationsType.newTopic,
+        }
+        notifications.push(notification)
+      }
+    })
+
+    await Notification.insertMany(notifications)
+
     res.status(201).json({ message: `New topic: ${topic.title} created` })
   } else {
     res.status(400).json({ message: 'Invalid topic data received' })
@@ -68,6 +99,37 @@ const updateTopic = asyncHandler(async (req, res) => {
   topic.title = title
 
   const updatedTopic = await topic.save()
+
+  if (updateTopic) {
+    // Send notifications to all the students and supervisors
+    const users = await User.find({ role: { $in: ['Student', 'Supervisor'] } })
+      .lean()
+      .exec()
+
+    const notifications = []
+
+    const existingNotifications = await Notification.find({
+      type: notificationsType.updateTopic,
+    })
+
+    users.forEach((user) => {
+      const notificationExists = existingNotifications.some(
+        (existingNotification) =>
+          existingNotification.user.toString() === user._id.toString()
+      )
+      if (!notificationExists) {
+        const notification = {
+          user: user._id,
+          message: `A Topic has been added`,
+          read: false,
+          type: notificationsType.updateTopic,
+        }
+        notifications.push(notification)
+      }
+    })
+
+    await Notification.insertMany(notifications)
+  }
 
   res.json({ message: `${updatedTopic.title} updated` })
 })

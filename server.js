@@ -16,6 +16,7 @@ import authRoutes from './routes/authRoutes.js'
 import topicRoutes from './routes/topicRoutes.js'
 import domainRoutes from './routes/domainRoutes.js'
 import profileRoutes from './routes/profileRoutes.js'
+import notificationRoutes from './routes/notificationRoutes.js'
 
 const PORT = process.env.PORT || 3500
 const __filename = fileURLToPath(import.meta.url)
@@ -25,7 +26,7 @@ const app = express()
 
 connectDB()
 
-app.use(logger)
+// app.use(logger)
 app.use(cors(corsOptions))
 app.use(express.json())
 app.use(cookieParser())
@@ -40,6 +41,7 @@ app.use('/auth', authRoutes)
 app.use('/topics', topicRoutes)
 app.use('/domains', domainRoutes)
 app.use('/profile', profileRoutes)
+app.use('/notifications', notificationRoutes)
 
 // routing bad request
 app.all('*', (req, res) => {
