@@ -5,6 +5,7 @@ const notificationsType = {
   updateTopic: 'Topic Updated',
   connRequest: 'Connection Request Received',
   connAccept: 'Connection Request Approved',
+  connDecline: 'Connection Request Declined',
   appointment: 'Appointment Scheduled',
 }
 

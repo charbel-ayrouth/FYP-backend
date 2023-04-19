@@ -39,29 +39,36 @@ const createNewDomain = asyncHandler(async (req, res) => {
       .lean()
       .exec()
 
-    const notifications = []
+    // Loop through users and send notifications
+    users.forEach(async (user) => {
+      // Check if a notification of type "domain" already exists for the user
+      const existingNotifications = await Notification.find({
+        user: user._id,
+        type: notificationsType.newDomain,
+        read: false,
+      })
+        .lean()
+        .exec()
+      const notificationExists = existingNotifications.length > 0
 
-    const existingNotifications = await Notification.find({
-      type: notificationsType.newDomain,
-    })
-
-    users.forEach((user) => {
-      const notificationExists = existingNotifications.some(
-        (existingNotification) =>
-          existingNotification.user.toString() === user._id.toString()
-      )
-      if (!notificationExists) {
-        const notification = {
+      // If a notification already exists, update the message
+      if (notificationExists) {
+        const existingNotification = existingNotifications[0]
+        const message = `Multiple Domains of application have been added`
+        await Notification.findByIdAndUpdate(existingNotification._id, {
+          message,
+        }).exec()
+      }
+      // If a notification doesn't exist, create a new notification
+      else {
+        const message = `New domain ${title} has been added`
+        await Notification.create({
           user: user._id,
-          message: `New domain of application has been added`,
-          read: false,
+          message,
           type: notificationsType.newDomain,
-        }
-        notifications.push(notification)
+        })
       }
     })
-
-    await Notification.insertMany(notifications)
 
     res.status(201).json({ message: `New domain: ${domain.title} created` })
   } else {
@@ -96,9 +103,7 @@ const updateDomain = async (req, res) => {
   }
 
   domain.title = title
-  if (example) {
-    domain.example = example
-  }
+  domain.example = example
 
   const updatedDomain = await domain.save()
 
@@ -108,32 +113,39 @@ const updateDomain = async (req, res) => {
       .lean()
       .exec()
 
-    const notifications = []
+    // Loop through users and send notifications
+    users.forEach(async (user) => {
+      // Check if a notification of type "domain" already exists for the user
+      const existingNotifications = await Notification.find({
+        user: user._id,
+        type: notificationsType.updateDomain,
+        read: false,
+      })
+        .lean()
+        .exec()
+      const notificationExists = existingNotifications.length > 0
 
-    const existingNotifications = await Notification.find({
-      type: notificationsType.updateDomain,
-    })
-
-    users.forEach((user) => {
-      const notificationExists = existingNotifications.some(
-        (existingNotification) =>
-          existingNotification.user.toString() === user._id.toString()
-      )
-      if (!notificationExists) {
-        const notification = {
+      // If a notification already exists, update the message
+      if (notificationExists) {
+        const existingNotification = existingNotifications[0]
+        const message = `Multiple Domains have been updated`
+        await Notification.findByIdAndUpdate(existingNotification._id, {
+          message,
+        }).exec()
+      }
+      // If a notification doesn't exist, create a new notification
+      else {
+        const message = `Domain ${title} has been updated`
+        await Notification.create({
           user: user._id,
-          message: `A domain of application has been updated`,
-          read: false,
+          message,
           type: notificationsType.updateDomain,
-        }
-        notifications.push(notification)
+        })
       }
     })
-
-    await Notification.insertMany(notifications)
   }
 
-  res.json(`'${updatedDomain.title}' updated`)
+  res.json({ message: `'${updatedDomain.title}' updated` })
 }
 
 // @desc Delete a user

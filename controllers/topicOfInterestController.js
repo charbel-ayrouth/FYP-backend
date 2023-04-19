@@ -43,29 +43,36 @@ const createNewTopic = asyncHandler(async (req, res) => {
       .lean()
       .exec()
 
-    const notifications = []
+    // Loop through users and send notifications
+    users.forEach(async (user) => {
+      // Check if a notification of type "domain" already exists for the user
+      const existingNotifications = await Notification.find({
+        user: user._id,
+        type: notificationsType.newTopic,
+        read: false,
+      })
+        .lean()
+        .exec()
+      const notificationExists = existingNotifications.length > 0
 
-    const existingNotifications = await Notification.find({
-      type: notificationsType.newTopic,
-    })
-
-    users.forEach((user) => {
-      const notificationExists = existingNotifications.some(
-        (existingNotification) =>
-          existingNotification.user.toString() === user._id.toString()
-      )
-      if (!notificationExists) {
-        const notification = {
+      // If a notification already exists, update the message
+      if (notificationExists) {
+        const existingNotification = existingNotifications[0]
+        const message = `Multiple Topics of interest have been added`
+        await Notification.findByIdAndUpdate(existingNotification._id, {
+          message,
+        }).exec()
+      }
+      // If a notification doesn't exist, create a new notification
+      else {
+        const message = `New topic ${title} has been added`
+        await Notification.create({
           user: user._id,
-          message: `New Topic has been added`,
-          read: false,
+          message,
           type: notificationsType.newTopic,
-        }
-        notifications.push(notification)
+        })
       }
     })
-
-    await Notification.insertMany(notifications)
 
     res.status(201).json({ message: `New topic: ${topic.title} created` })
   } else {
@@ -106,29 +113,36 @@ const updateTopic = asyncHandler(async (req, res) => {
       .lean()
       .exec()
 
-    const notifications = []
+    // Loop through users and send notifications
+    users.forEach(async (user) => {
+      // Check if a notification of type "domain" already exists for the user
+      const existingNotifications = await Notification.find({
+        user: user._id,
+        type: notificationsType.updateTopic,
+        read: false,
+      })
+        .lean()
+        .exec()
+      const notificationExists = existingNotifications.length > 0
 
-    const existingNotifications = await Notification.find({
-      type: notificationsType.updateTopic,
-    })
-
-    users.forEach((user) => {
-      const notificationExists = existingNotifications.some(
-        (existingNotification) =>
-          existingNotification.user.toString() === user._id.toString()
-      )
-      if (!notificationExists) {
-        const notification = {
+      // If a notification already exists, update the message
+      if (notificationExists) {
+        const existingNotification = existingNotifications[0]
+        const message = `Multiple Topics of interests have been updated`
+        await Notification.findByIdAndUpdate(existingNotification._id, {
+          message,
+        }).exec()
+      }
+      // If a notification doesn't exist, create a new notification
+      else {
+        const message = `Topic ${title} has been updated`
+        await Notification.create({
           user: user._id,
-          message: `A Topic has been added`,
-          read: false,
+          message,
           type: notificationsType.updateTopic,
-        }
-        notifications.push(notification)
+        })
       }
     })
-
-    await Notification.insertMany(notifications)
   }
 
   res.json({ message: `${updatedTopic.title} updated` })
