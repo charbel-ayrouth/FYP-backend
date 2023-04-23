@@ -7,6 +7,7 @@ const notificationsType = {
   connAccept: 'Connection Request Approved',
   connDecline: 'Connection Request Declined',
   appointment: 'Appointment Scheduled',
+  newSupervisor: 'New Supervisor Added',
 }
 
 export default notificationsType

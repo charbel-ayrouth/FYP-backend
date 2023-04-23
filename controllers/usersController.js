@@ -17,6 +17,29 @@ const getAllUsers = asyncHandler(async (req, res) => {
   res.json(users)
 })
 
+// @desc check if user has completed account setup
+// @route Patch /users/:id
+// @access Private
+const accountSetupComplete = asyncHandler(async (req, res) => {
+  const { id } = req.params
+
+  const user = await User.findById(id)
+    .populate('topics')
+    .populate('domains')
+    .lean()
+    .exec()
+
+  if (!user.username || user.topics.length === 0 || user.domains.length === 0) {
+    return res
+      .status(400)
+      .json({ message: 'Please complete your account setup' })
+  } else {
+    return res
+      .status(201)
+      .json({ message: `${user.username} has completed his account setup` })
+  }
+})
+
 // @desc Create new user
 // @route Post /users
 // @access Private
@@ -56,6 +79,45 @@ const createNewUser = asyncHandler(async (req, res) => {
 
   if (user) {
     // if it was created
+    if (user.role === ROLES.Supervisor) {
+      // Send notifications to all the students and supervisors
+      const users = await User.find({
+        role: ROLES.Student,
+      })
+        .lean()
+        .exec()
+
+      // Loop through users and send notifications
+      users.forEach(async (u) => {
+        // Check if a notification of type "domain" already exists for the user
+        const existingNotifications = await Notification.find({
+          user: u._id,
+          type: notificationsType.newSupervisor,
+          read: false,
+        })
+          .lean()
+          .exec()
+        const notificationExists = existingNotifications.length > 0
+
+        // If a notification already exists, update the message
+        if (notificationExists) {
+          const existingNotification = existingNotifications[0]
+          const message = `Multiple Supervisors have been added`
+          await Notification.findByIdAndUpdate(existingNotification._id, {
+            message,
+          }).exec()
+        }
+        // If a notification doesn't exist, create a new notification
+        else {
+          const message = `New Supervisor ${user.username} has been added`
+          await Notification.create({
+            user: u._id,
+            message,
+            type: notificationsType.newSupervisor,
+          })
+        }
+      })
+    }
     res.status(201).json({ message: `New user ${email} created` })
   } else {
     res.status(400).json({ message: 'Invalid user data received' })
@@ -125,11 +187,37 @@ const deleteUser = asyncHandler(async (req, res) => {
 // @route Get /users/supervisors
 // @access Private
 const getAllSupervisors = asyncHandler(async (req, res) => {
-  const users = await User.find({ role: ROLES.Admin })
+  // Get filter parameters from req.query
+  const { topicIds, domainIds } = req.query
+
+  // Build the filter object
+  const filter = {
+    role: ROLES.Supervisor,
+    username: { $ne: null, $ne: undefined },
+  }
+
+  if (topicIds) {
+    // Convert comma-separated string of topic IDs to array of ObjectIds
+    const topicObjectIds = topicIds
+      .split(',')
+      .map((id) => mongoose.Types.ObjectId(id))
+    filter.topics = { $in: topicObjectIds }
+  }
+
+  if (domainIds) {
+    // Convert comma-separated string of domain IDs to array of ObjectIds
+    const domainObjectIds = domainIds
+      .split(',')
+      .map((id) => mongoose.Types.ObjectId(id))
+    filter.domains = { $in: domainObjectIds }
+  }
+
+  const users = await User.find(filter)
     .select('-password')
     .populate('topics')
     .populate('domains')
     .lean()
+    .exec()
 
   if (!users?.length) {
     return res.status(400).json({ mesage: 'No users found' })
@@ -142,7 +230,7 @@ const getAllSupervisors = asyncHandler(async (req, res) => {
 // @access  Private (student only)
 const sendConnectionRequest = asyncHandler(async (req, res) => {
   const { supervisorId } = req.params
-  const { studentId } = req.user // user ID of the student sending the request
+  const { studentId } = req.body // user ID of the student sending the request
 
   // Check if the supervisor exists
   const supervisor = await User.findById(supervisorId)
@@ -251,4 +339,5 @@ export {
   sendConnectionRequest,
   acceptConnectionRequest,
   declineConnectionRequest,
+  accountSetupComplete,
 }

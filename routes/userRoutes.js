@@ -8,6 +8,7 @@ import {
   sendConnectionRequest,
   acceptConnectionRequest,
   declineConnectionRequest,
+  accountSetupComplete,
 } from '../controllers/usersController.js'
 import verifyJWT from '../middleware/verifyJWT.js'
 import verifyRoles from '../middleware/verifyRoles.js'
@@ -26,6 +27,7 @@ router
   .route('/:id')
   .patch(verifyRoles(ROLES.Admin), adminUpdateUser)
   .delete(verifyRoles(ROLES.Admin), deleteUser)
+  .get(accountSetupComplete)
 
 router.route('/supervisors').get(getAllSupervisors)
 
