@@ -6,7 +6,7 @@ import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
 import Token from '../models/Token.js'
-import nodemailer from 'nodemailer'
+import { transporter } from '../server.js'
 
 // @desc Login
 // @route Post /auth
@@ -152,16 +152,6 @@ const forgetPassword = asyncHandler(async (req, res) => {
       http://localhost:3000/reset-password/${token}\n\n
       If you did not request this, please ignore this email and your password will remain unchanged.\n`,
   }
-
-  let transporter = nodemailer.createTransport({
-    host: 'smtp-mail.outlook.com',
-    port: 587,
-    secure: false,
-    auth: {
-      user: 'charbel.ayrouth@live.com',
-      pass: 'Ch@rbel76533939',
-    },
-  })
 
   transporter.sendMail(mailOptions, function (err, data) {
     if (err) {

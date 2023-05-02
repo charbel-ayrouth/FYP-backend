@@ -18,10 +18,23 @@ import domainRoutes from './routes/domainRoutes.js'
 import profileRoutes from './routes/profileRoutes.js'
 import notificationRoutes from './routes/notificationRoutes.js'
 import supervisorRoutes from './routes/supervisorRoutes.js'
+import nodemailer from 'nodemailer'
 
 const PORT = process.env.PORT || 3500
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+const email = process.env.MAIL_USERNAME
+const password = process.env.MAIL_PASSWORD
+
+export let transporter = nodemailer.createTransport({
+  host: 'smtp-mail.outlook.com',
+  port: 587,
+  secure: false,
+  auth: {
+    user: email,
+    pass: password,
+  },
+})
 
 const app = express()
 
@@ -62,7 +75,9 @@ app.use(errorHandler)
 
 mongoose.connection.once('open', () => {
   console.log('Connected to MongoDB')
-  app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
+  app.listen(PORT, () =>
+    console.log(`Server running on port ${PORT} ${email} ${password}`)
+  )
 })
 
 mongoose.connection.on('error', (err) => {
