@@ -30,7 +30,7 @@ const updateProfile = asyncHandler(async (req, res) => {
     .exec()
 
   // Allow updates to the original user
-  if (duplicate && duplicate?._id.toString() !== id) {
+  if (duplicate && duplicate?._id.toString() !== userId) {
     return res.status(409).json({ message: 'Duplicate username' })
   }
 

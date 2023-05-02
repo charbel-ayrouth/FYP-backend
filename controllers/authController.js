@@ -1,7 +1,12 @@
+import * as dotenv from 'dotenv'
+dotenv.config()
 import User from '../models/User.js'
 import asyncHandler from 'express-async-handler'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
+import crypto from 'crypto'
+import Token from '../models/Token.js'
+import nodemailer from 'nodemailer'
 
 // @desc Login
 // @route Post /auth
@@ -30,6 +35,7 @@ const login = asyncHandler(async (req, res) => {
         role: foundUser.role,
         id: foundUser._id,
         username: foundUser.username,
+        setupComplete: foundUser.setupComplete,
       },
     },
     process.env.ACCESS_TOKEN_SECRET,
@@ -83,6 +89,7 @@ const refresh = (req, res) => {
             role: foundUser.role,
             id: foundUser._id,
             username: foundUser.username,
+            setupComplete: foundUser.setupComplete,
           },
         },
         process.env.ACCESS_TOKEN_SECRET,
@@ -104,4 +111,111 @@ const logout = (req, res) => {
   res.json({ message: 'Cookie cleared' })
 }
 
-export { login, refresh, logout }
+// @desc create Token and send email
+// @route Post /auth/forget-password
+// @access Public
+const forgetPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body
+
+  // Check if the user with the email address exists in your database
+  const user = await User.findOne({ email })
+  if (!user) {
+    return res
+      .status(400)
+      .json({ message: 'User with this email does not exist' })
+  }
+
+  const token = crypto.randomBytes(20).toString('hex')
+
+  const existingToken = await Token.findOne({ userId: user._id })
+
+  if (existingToken) {
+    // Update the existing token document
+    existingToken.token = token
+    existingToken.createdAt = Date.now()
+    await existingToken.save()
+  } else {
+    // Create a new token document
+    const resetToken = new Token({
+      userId: user._id,
+      token: token,
+    })
+    await resetToken.save()
+  }
+
+  const mailOptions = {
+    to: email,
+    from: process.env.MAIL_USERNAME,
+    subject: 'Reset your password',
+    text: `You are receiving this email because you (or someone else) have requested to reset the password for your account.\n\n
+      Please click on the following link or paste it into your browser to complete the process:\n\n
+      http://localhost:3000/reset-password/${token}\n\n
+      If you did not request this, please ignore this email and your password will remain unchanged.\n`,
+  }
+
+  let transporter = nodemailer.createTransport({
+    host: 'smtp-mail.outlook.com',
+    port: 587,
+    secure: false,
+    auth: {
+      user: 'charbel.ayrouth@live.com',
+      pass: 'Ch@rbel76533939',
+    },
+  })
+
+  transporter.sendMail(mailOptions, function (err, data) {
+    if (err) {
+      console.log('Error ' + err)
+      res.status(400).json({ message: 'Error sending the email' })
+    } else {
+      console.log('Email sent successfully')
+      res.status(200).json({ message: 'Email sent to reset password' })
+    }
+  })
+})
+
+// @desc create Token and send email
+// @route Post /auth/forget-password
+// @access Public
+const resestPassword = asyncHandler(async (req, res) => {
+  const { newPassword } = req.body
+  const { token } = req.params
+
+  // Find the reset password token in your database
+  const resetToken = await Token.findOne({ token }).lean()
+
+  // Check if the reset password token exists and is not expired
+  if (!resetToken) {
+    return res
+      .status(400)
+      .json({ message: 'Invalid or expired reset password token' })
+  }
+
+  // Find the user with the user ID stored in the reset password token
+  const user = await User.findById(resetToken.userId)
+
+  if (!user) {
+    return res
+      .status(400)
+      .json({ message: 'User with the provided token not found' })
+  }
+
+  const match = await bcrypt.compare(newPassword, user.password)
+
+  if (match) {
+    return res
+      .status(400)
+      .json({ message: 'Cannot change password to old password' })
+  }
+
+  // Update the user's password in your database using bcrypt
+  user.password = await bcrypt.hash(newPassword, 10)
+  await user.save()
+
+  // Delete the reset password token from your database
+  await Token.findByIdAndDelete(resetToken._id)
+
+  res.status(200).json({ message: 'Password reset successful' })
+})
+
+export { login, refresh, logout, forgetPassword, resestPassword }
