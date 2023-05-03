@@ -4,10 +4,6 @@ import {
   createNewUser,
   adminUpdateUser,
   deleteUser,
-  getAllSupervisors,
-  sendConnectionRequest,
-  acceptConnectionRequest,
-  declineConnectionRequest,
   accountSetupComplete,
 } from '../controllers/usersController.js'
 import verifyJWT from '../middleware/verifyJWT.js'
@@ -28,11 +24,5 @@ router
   .patch(verifyRoles(ROLES.Admin), adminUpdateUser)
   .delete(verifyRoles(ROLES.Admin), deleteUser)
   .get(accountSetupComplete)
-
-router.route('/supervisors').get(getAllSupervisors)
-
-router.post('/:supervisorId/connect', sendConnectionRequest)
-router.post('/:supervisorId/accept', acceptConnectionRequest)
-router.post('/:supervisorId/decline', declineConnectionRequest)
 
 export default router

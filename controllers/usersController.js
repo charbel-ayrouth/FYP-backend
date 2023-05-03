@@ -18,26 +18,23 @@ const getAllUsers = asyncHandler(async (req, res) => {
 })
 
 // @desc check if user has completed account setup
-// @route Patch /users/:id
+// @route POST /users/:id
 // @access Private
 const accountSetupComplete = asyncHandler(async (req, res) => {
   const { id } = req.params
 
-  const user = await User.findById(id)
-    .populate('topics')
-    .populate('domains')
-    .lean()
-    .exec()
+  const user = await User.findById(id).exec()
 
-  if (!user.username || user.topics.length === 0 || user.domains.length === 0) {
-    return res
-      .status(400)
-      .json({ message: 'Please complete your account setup' })
-  } else {
-    return res
-      .status(201)
-      .json({ message: `${user.username} has completed his account setup` })
+  if (!user) {
+    return res.status(400).json({ message: 'User not found' })
   }
+
+  user.setupComplete = true
+  const updatedUser = await user.save()
+
+  res.status(201).json({
+    message: `${updatedUser.username} has completed his account setup`,
+  })
 })
 
 // @desc Create new user
@@ -183,161 +180,10 @@ const deleteUser = asyncHandler(async (req, res) => {
   res.json(reply)
 })
 
-// @desc Get all users
-// @route Get /users/supervisors
-// @access Private
-const getAllSupervisors = asyncHandler(async (req, res) => {
-  // Get filter parameters from req.query
-  const { topicIds, domainIds } = req.query
-
-  // Build the filter object
-  const filter = {
-    role: ROLES.Supervisor,
-    username: { $ne: null, $ne: undefined },
-  }
-
-  if (topicIds) {
-    // Convert comma-separated string of topic IDs to array of ObjectIds
-    const topicObjectIds = topicIds
-      .split(',')
-      .map((id) => mongoose.Types.ObjectId(id))
-    filter.topics = { $in: topicObjectIds }
-  }
-
-  if (domainIds) {
-    // Convert comma-separated string of domain IDs to array of ObjectIds
-    const domainObjectIds = domainIds
-      .split(',')
-      .map((id) => mongoose.Types.ObjectId(id))
-    filter.domains = { $in: domainObjectIds }
-  }
-
-  const users = await User.find(filter)
-    .select('-password')
-    .populate('topics')
-    .populate('domains')
-    .lean()
-    .exec()
-
-  if (!users?.length) {
-    return res.status(400).json({ mesage: 'No users found' })
-  }
-  res.json(users)
-})
-
-// @desc    Send connection request to supervisor
-// @route   POST /users/:supervisorId/connect
-// @access  Private (student only)
-const sendConnectionRequest = asyncHandler(async (req, res) => {
-  const { supervisorId } = req.params
-  const { studentId } = req.body // user ID of the student sending the request
-
-  // Check if the supervisor exists
-  const supervisor = await User.findById(supervisorId)
-  const student = await User.findById(studentId)
-
-  if (!supervisor || supervisor.role !== ROLES.Supervisor) {
-    res.status(400).json({ message: 'Supervisor not found' })
-  }
-  if (!student || student.role !== ROLES.Student) {
-    res.status(400).json({ message: 'Student not found' })
-  }
-
-  // Add the student's ID to the supervisor's connection requests array
-  supervisor.connectionRequest.push(studentId)
-  await supervisor.save()
-
-  await Notification.create({
-    user: supervisorId,
-    message: `${student.username} has sent you a connection request`,
-    type: notificationsType.connRequest,
-  })
-
-  res.status(200).json({ message: 'Connection request sent successfully' })
-})
-
-// @desc    Send connection request to supervisor
-// @route   POST /users/:supervisorId/accept
-// @access  Private (student only)
-const acceptConnectionRequest = asyncHandler(async (req, res) => {
-  const { supervisorId } = req.params
-  const { studentId } = req.body
-
-  // Find the student and supervisor in the database
-  const student = await User.findById(studentId)
-  const supervisor = await User.findById(supervisorId)
-
-  if (!supervisor || supervisor.role !== ROLES.Supervisor) {
-    res.status(400).json({ message: 'Supervisor not found' })
-  }
-  if (!student || student.role !== ROLES.Student) {
-    res.status(400).json({ message: 'Student not found' })
-  }
-
-  // Update the connection lists of the student and the supervisor
-  student.connections.push(supervisorId)
-  await student.save()
-
-  supervisor.connections.push(studentId)
-  await supervisor.save()
-
-  // Remove the student's ID from the supervisor's connection request list
-  supervisor.connectionRequest = supervisor.connectionRequest.filter(
-    (id) => id.toString() !== studentId.toString()
-  )
-  await supervisor.save()
-
-  await Notification.create({
-    user: studentId,
-    message: `${supervisor.username} accepted your connection request`,
-    type: notificationsType.connAccept,
-  })
-
-  res.status(200).json({ message: 'Connection request accepted.' })
-})
-
-const declineConnectionRequest = asyncHandler(async (req, res) => {
-  const { supervisorId } = req.params
-  const { studentId } = req.body
-
-  // Find the student and supervisor in the database
-  const student = await User.findById(studentId)
-  const supervisor = await User.findById(supervisorId)
-
-  if (!supervisor || supervisor.role !== ROLES.Supervisor) {
-    res.status(400).json({ message: 'Supervisor not found' })
-  }
-  if (!student || student.role !== ROLES.Student) {
-    res.status(400).json({ message: 'Student not found' })
-  }
-
-  // Check if the supervisor has a connection request from the student
-  if (!supervisor.connectionRequest.includes(studentId)) {
-    return res.status(404).json({ message: 'Connection request not found' })
-  }
-
-  // Remove the connection request from the user's connectionRequest array
-  const index = supervisor.connectionRequest.indexOf(studentId)
-  supervisor.connectionRequest.splice(index, 1)
-  await supervisor.save()
-
-  await Notification.create({
-    user: studentId,
-    message: `${supervisor.username} declined your connection request`,
-    type: notificationsType.connDecline,
-  })
-
-  return res.status(200).json({ message: 'Connection request declined' })
-})
-
 export {
   getAllUsers,
   createNewUser,
   adminUpdateUser,
   deleteUser,
-  getAllSupervisors,
-  sendConnectionRequest,
-  acceptConnectionRequest,
-  declineConnectionRequest,
   accountSetupComplete,
 }
