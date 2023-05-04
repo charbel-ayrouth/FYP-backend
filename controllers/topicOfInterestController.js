@@ -10,9 +10,9 @@ import notificationsType from '../config/notificationsType.js'
 const getAllTopics = asyncHandler(async (req, res) => {
   const topics = await TopicOfInterest.find().lean()
 
-  if (!topics?.length) {
-    return res.status(400).json({ message: 'No topics found' })
-  }
+  // if (!topics?.length) {
+  //   return res.status(400).json({ message: 'No topics found' })
+  // }
   res.json(topics)
 })
 

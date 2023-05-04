@@ -23,6 +23,6 @@ router
   .route('/:id')
   .patch(verifyRoles(ROLES.Admin), adminUpdateUser)
   .delete(verifyRoles(ROLES.Admin), deleteUser)
-  .get(accountSetupComplete)
+  .post(accountSetupComplete)
 
 export default router

@@ -10,9 +10,9 @@ import notificationsType from '../config/notificationsType.js'
 const getAllDomains = asyncHandler(async (req, res) => {
   const domains = await DomainOfApplication.find().lean()
 
-  if (!domains.length) {
-    return res.status(400).json({ message: 'No Domain found' })
-  }
+  // if (!domains.length) {
+  //   return res.status(400).json({ message: 'No Domain found' })
+  // }
   res.json(domains)
 })
 

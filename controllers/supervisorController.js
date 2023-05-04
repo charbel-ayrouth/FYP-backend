@@ -4,18 +4,16 @@ import ROLES from '../config/roles.js'
 import Notification from '../models/Notifications.js'
 import notificationsType from '../config/notificationsType.js'
 
-// @desc Get all users
-// @route Get /users/supervisors
+// @desc Get recommended supervisors
+// @route Get /supervisors/recommended/:userId
 // @access Private
-const getAllSupervisors = asyncHandler(async (req, res) => {
-  // Get the id of the logged in user from the req.body
+const getRecommendedSupervisors = asyncHandler(async (req, res) => {
   const { userId } = req.params
 
   if (!userId) {
-    return res.status(400).json({ mesage: 'User Id missing' })
+    return res.status(400).json({ message: 'User Id missing' })
   }
 
-  // Find the user by id and populate the topics and domains fields
   const user = await User.findById(userId)
     // .populate('topics')
     // .populate('domains')
@@ -23,7 +21,7 @@ const getAllSupervisors = asyncHandler(async (req, res) => {
     .exec()
 
   if (!user) {
-    return res.status(400).json({ mesage: 'User not found' })
+    return res.status(400).json({ message: 'User not found' })
   }
 
   // Build the filter object based on the user's topics and domains
@@ -41,9 +39,44 @@ const getAllSupervisors = asyncHandler(async (req, res) => {
     .lean()
     .exec()
 
-  if (!users?.length) {
-    return res.status(400).json({ mesage: 'No users found' })
+  // if (!users?.length) {
+  //   return res.status(400).json({ message: 'No users found' })
+  // }
+
+  res.json(users)
+})
+
+// @desc Get recommended supervisors
+// @route Get /supervisors/other/:userId
+// @access Private
+const getOtherSupervisors = asyncHandler(async (req, res) => {
+  const { userId } = req.params
+
+  if (!userId) {
+    return res.status(400).json({ message: 'User Id missing' })
   }
+
+  const user = await User.findById(userId).lean().exec()
+
+  if (!user) {
+    return res.status(400).json({ message: 'User not found' })
+  }
+
+  const filter = {
+    role: ROLES.Supervisor,
+    username: { $ne: null, $ne: undefined },
+    $or: [
+      { topics: { $nin: user.topics } },
+      { domains: { $nin: user.domains } },
+    ],
+  }
+
+  const users = await User.find(filter)
+    .select('-password')
+    .populate('topics')
+    .populate('domains')
+    .lean()
+    .exec()
 
   res.json(users)
 })
@@ -154,8 +187,9 @@ const declineConnectionRequest = asyncHandler(async (req, res) => {
 })
 
 export {
-  getAllSupervisors,
+  getRecommendedSupervisors,
   sendConnectionRequest,
   acceptConnectionRequest,
   declineConnectionRequest,
+  getOtherSupervisors,
 }

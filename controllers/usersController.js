@@ -9,11 +9,13 @@ import notificationsType from '../config/notificationsType.js'
 // @route Get /users
 // @access Private
 const getAllUsers = asyncHandler(async (req, res) => {
-  const users = await User.find().select('-password').lean()
+  const users = await User.find({ role: { $ne: ROLES.Admin } })
+    .select('-password')
+    .lean()
 
-  if (!users?.length) {
-    return res.status(400).json({ mesage: 'No users found' })
-  }
+  // if (!users?.length) {
+  //   return res.status(400).json({ message: 'No users found' })
+  // }
   res.json(users)
 })
 
