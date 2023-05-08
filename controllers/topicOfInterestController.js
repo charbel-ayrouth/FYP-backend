@@ -178,7 +178,7 @@ const deleteTopic = asyncHandler(async (req, res) => {
 const getTopicsOfUser = asyncHandler(async (req, res) => {
   const { userId } = req.params
 
-  const user = await User.findById(userId)
+  const user = await User.findById(userId).populate('topics')
 
   const topics = user.topics
 

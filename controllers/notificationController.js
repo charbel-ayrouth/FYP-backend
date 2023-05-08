@@ -17,6 +17,22 @@ const getNotifications = asyncHandler(async (req, res) => {
   res.json(notifications)
 })
 
+// @desc get new notifications of a user
+// @route GET /:userId
+// @access Private
+const getNewNotifications = asyncHandler(async (req, res) => {
+  const { userId } = req.params
+
+  const notifications = await Notification.find({ user: userId, read: false })
+    .sort({
+      createdAt: 'desc',
+    })
+    .lean()
+    .exec()
+
+  res.json(notifications)
+})
+
 // @desc mark notifications as read
 // @route POST /:userId
 // @access Private
@@ -51,4 +67,9 @@ const markNotificationAsRead = asyncHandler(async (req, res) => {
   }
 })
 
-export { getNotifications, readNotifications, markNotificationAsRead }
+export {
+  getNotifications,
+  readNotifications,
+  markNotificationAsRead,
+  getNewNotifications,
+}

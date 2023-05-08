@@ -4,6 +4,8 @@ import bcrypt from 'bcrypt'
 import ROLES from '../config/roles.js'
 import Notification from '../models/Notifications.js'
 import notificationsType from '../config/notificationsType.js'
+import DomainOfApplication from '../models/DomainOfApplication.js'
+import TopicOfInterest from '../models/TopicOfInterest.js'
 
 // @desc Get all users
 // @route Get /users
@@ -37,6 +39,39 @@ const accountSetupComplete = asyncHandler(async (req, res) => {
   res.status(201).json({
     message: `${updatedUser.username} has completed his account setup`,
   })
+})
+
+// @desc get overview for dashboard
+// @route Get /users/:id
+// @access Private
+const overview = asyncHandler(async (req, res) => {
+  const { id } = req.params
+
+  const user = await User.findById(id).exec()
+
+  if (!user) {
+    return res.status(400).json({ message: 'User not found' })
+  } else if (user.role === ROLES.Admin) {
+    const userCount = await User.countDocuments({
+      $or: [{ role: ROLES.Student }, { role: ROLES.Supervisor }],
+    })
+    const domainCount = await DomainOfApplication.countDocuments()
+    const topicCount = await TopicOfInterest.countDocuments()
+    return res.status(200).json({
+      userCount,
+      domainCount,
+      topicCount,
+    })
+  } else if (user.role === ROLES.Student || user.role === ROLES.Supervisor) {
+    const selectedDomain = user.domains.length
+    const selectedTopic = user.topics.length
+    const connections = user.connections.length
+    return res.status(200).json({
+      selectedDomain,
+      selectedTopic,
+      connections,
+    })
+  }
 })
 
 // @desc Create new user
@@ -188,4 +223,5 @@ export {
   adminUpdateUser,
   deleteUser,
   accountSetupComplete,
+  overview,
 }

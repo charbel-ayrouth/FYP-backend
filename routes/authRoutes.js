@@ -16,7 +16,7 @@ router.route('/refresh').get(refresh)
 
 router.route('/logout').post(logout)
 
-router.post('/forget-password', forgetPassword)
+router.post('/forget-password', loginLimiter, forgetPassword)
 router.post('/reset-password/:token', resestPassword)
 
 export default router

@@ -5,6 +5,7 @@ import {
   adminUpdateUser,
   deleteUser,
   accountSetupComplete,
+  overview,
 } from '../controllers/usersController.js'
 import verifyJWT from '../middleware/verifyJWT.js'
 import verifyRoles from '../middleware/verifyRoles.js'
@@ -24,5 +25,6 @@ router
   .patch(verifyRoles(ROLES.Admin), adminUpdateUser)
   .delete(verifyRoles(ROLES.Admin), deleteUser)
   .post(accountSetupComplete)
+  .get(overview)
 
 export default router

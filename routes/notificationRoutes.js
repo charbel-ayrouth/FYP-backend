@@ -6,6 +6,7 @@ import {
   getNotifications,
   readNotifications,
   markNotificationAsRead,
+  getNewNotifications,
 } from '../controllers/notificationController.js'
 
 const router = express.Router()
@@ -17,5 +18,7 @@ router
   .get(getNotifications)
   .post(readNotifications)
   .patch(markNotificationAsRead)
+
+router.get('/:userId/new', getNewNotifications)
 
 export default router

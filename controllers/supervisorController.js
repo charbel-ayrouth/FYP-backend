@@ -82,7 +82,7 @@ const getOtherSupervisors = asyncHandler(async (req, res) => {
 })
 
 // @desc    Send connection request to supervisor
-// @route   POST /users/:supervisorId/connect
+// @route   POST /supervisors/:supervisorId/connect
 // @access  Private (student only)
 const sendConnectionRequest = asyncHandler(async (req, res) => {
   const { supervisorId } = req.params
@@ -112,8 +112,8 @@ const sendConnectionRequest = asyncHandler(async (req, res) => {
   res.status(200).json({ message: 'Connection request sent successfully' })
 })
 
-// @desc    Send connection request to supervisor
-// @route   POST /users/:supervisorId/accept
+// @desc    Accept connection request to supervisor
+// @route   POST /supervisors/:supervisorId/accept
 // @access  Private (student only)
 const acceptConnectionRequest = asyncHandler(async (req, res) => {
   const { supervisorId } = req.params
@@ -186,10 +186,30 @@ const declineConnectionRequest = asyncHandler(async (req, res) => {
   return res.status(200).json({ message: 'Connection request declined' })
 })
 
+// @desc    get connection request of student and user
+// @route   POST /supervisors/:supervisorId/connect
+// @access  Private
+const getConnectionsRequest = asyncHandler(async (req, res) => {
+  const { supervisorId } = req.params
+
+  // Check if the user exists
+  const user = await User.findById(supervisorId)
+    .populate('connectionRequest')
+    .lean()
+    .exec()
+
+  if (!user) {
+    res.status(400).json({ message: 'User not found' })
+  }
+
+  res.status(200).json(user.connectionRequest)
+})
+
 export {
   getRecommendedSupervisors,
   sendConnectionRequest,
   acceptConnectionRequest,
   declineConnectionRequest,
   getOtherSupervisors,
+  getConnectionsRequest,
 }

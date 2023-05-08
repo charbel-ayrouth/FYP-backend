@@ -178,7 +178,7 @@ const deleteDomain = async (req, res) => {
 const getDomainsOfUser = asyncHandler(async (req, res) => {
   const { userId } = req.params
 
-  const user = await User.findById(userId)
+  const user = await User.findById(userId).populate('domains')
 
   const domains = user.domains
 
