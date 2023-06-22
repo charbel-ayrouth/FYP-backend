@@ -3,6 +3,7 @@ import asyncHandler from 'express-async-handler'
 import ROLES from '../config/roles.js'
 import Notification from '../models/Notifications.js'
 import notificationsType from '../config/notificationsType.js'
+import { transporter } from '../server.js'
 
 // @desc Get recommended supervisors
 // @route Get /supervisors/recommended/:userId
@@ -86,22 +87,63 @@ const getOtherSupervisors = asyncHandler(async (req, res) => {
 // @access  Private (student only)
 const sendConnectionRequest = asyncHandler(async (req, res) => {
   const { supervisorId } = req.params
-  const { studentId } = req.body // user ID of the student sending the request
+  const { studentId, message } = req.body // user ID of the student sending the request
 
   // Check if the supervisor exists
   const supervisor = await User.findById(supervisorId)
   const student = await User.findById(studentId)
 
   if (!supervisor || supervisor.role !== ROLES.Supervisor) {
-    res.status(400).json({ message: 'Supervisor not found' })
+    return res.status(400).json({ message: 'Supervisor not found' })
   }
   if (!student || student.role !== ROLES.Student) {
-    res.status(400).json({ message: 'Student not found' })
+    return res.status(400).json({ message: 'Student not found' })
+  }
+
+  // Check if the student has already sent a connection request to the supervisor
+  const existingConnectionRequest = supervisor.connectionRequest.find(
+    (request) => request.user.toString() === studentId
+  )
+  if (existingConnectionRequest) {
+    return res.status(400).json({
+      message: 'You have already sent a connection request to this supervisor',
+    })
+  }
+  // Check if the supervisor has already connected with the student
+  const existingConnection = supervisor.connections.find(
+    (conn) => conn.toString() === studentId
+  )
+  if (existingConnection) {
+    return res.status(400).json({
+      message: 'You have already been connected',
+    })
+  }
+
+  const connectionRequest = {
+    user: studentId,
+    message: message,
   }
 
   // Add the student's ID to the supervisor's connection requests array
-  supervisor.connectionRequest.push(studentId)
+  supervisor.connectionRequest.push(connectionRequest)
   await supervisor.save()
+
+  const mailOptions = {
+    to: supervisor.email,
+    from: process.env.MAIL_USERNAME,
+    subject: 'Connection Request Received',
+    text: `${student.username} has sent you a connection request`,
+  }
+
+  transporter.sendMail(mailOptions, function (err, data) {
+    if (err) {
+      console.log('Error ' + err)
+      res.status(400).json({ message: 'Error sending the email' })
+    } else {
+      console.log('Email sent successfully')
+      res.status(200).json({ message: 'Email sent to reset password' })
+    }
+  })
 
   await Notification.create({
     user: supervisorId,
@@ -109,7 +151,9 @@ const sendConnectionRequest = asyncHandler(async (req, res) => {
     type: notificationsType.connRequest,
   })
 
-  res.status(200).json({ message: 'Connection request sent successfully' })
+  return res
+    .status(200)
+    .json({ message: 'Connection request sent successfully' })
 })
 
 // @desc    Accept connection request to supervisor
@@ -124,12 +168,19 @@ const acceptConnectionRequest = asyncHandler(async (req, res) => {
   const supervisor = await User.findById(supervisorId)
 
   if (!supervisor || supervisor.role !== ROLES.Supervisor) {
-    res.status(400).json({ message: 'Supervisor not found' })
+    return res.status(400).json({ message: 'Supervisor not found' })
   }
   if (!student || student.role !== ROLES.Student) {
-    res.status(400).json({ message: 'Student not found' })
+    return res.status(400).json({ message: 'Student not found' })
   }
 
+  if (
+    !supervisor.connectionRequest.some(
+      (req) => req.user.toString() === studentId
+    )
+  ) {
+    res.status(404).json({ message: 'Connection request not found' })
+  }
   // Update the connection lists of the student and the supervisor
   student.connections.push(supervisorId)
   await student.save()
@@ -137,11 +188,31 @@ const acceptConnectionRequest = asyncHandler(async (req, res) => {
   supervisor.connections.push(studentId)
   await supervisor.save()
 
-  // Remove the student's ID from the supervisor's connection request list
-  supervisor.connectionRequest = supervisor.connectionRequest.filter(
-    (id) => id.toString() !== studentId.toString()
+  const newConnectionRequest = supervisor.connectionRequest.filter(
+    (request) => request.user.toString() !== studentId
   )
+
+  // Remove the student's ID from the supervisor's connection request list
+  supervisor.connectionRequest = newConnectionRequest
+
   await supervisor.save()
+
+  const mailOptions = {
+    to: student.email,
+    from: process.env.MAIL_USERNAME,
+    subject: 'Connection Request Accepted',
+    text: `${supervisor.username} has accept your connection request`,
+  }
+
+  transporter.sendMail(mailOptions, function (err, data) {
+    if (err) {
+      console.log('Error ' + err)
+      res.status(400).json({ message: 'Error sending the email' })
+    } else {
+      console.log('Email sent successfully')
+      res.status(200).json({ message: 'Email sent to reset password' })
+    }
+  })
 
   await Notification.create({
     user: studentId,
@@ -168,14 +239,37 @@ const declineConnectionRequest = asyncHandler(async (req, res) => {
   }
 
   // Check if the supervisor has a connection request from the student
-  if (!supervisor.connectionRequest.includes(studentId)) {
-    return res.status(404).json({ message: 'Connection request not found' })
+  if (
+    !supervisor.connectionRequest.some(
+      (request) => request.user.toString() === studentId
+    )
+  ) {
+    res.status(404).json({ message: 'Connection request not found' })
   }
 
-  // Remove the connection request from the user's connectionRequest array
-  const index = supervisor.connectionRequest.indexOf(studentId)
-  supervisor.connectionRequest.splice(index, 1)
+  const newConnectionRequest = supervisor.connectionRequest.filter(
+    (request) => request.user.toString() !== studentId
+  )
+
+  supervisor.connectionRequest = newConnectionRequest
   await supervisor.save()
+
+  const mailOptions = {
+    to: student.email,
+    from: process.env.MAIL_USERNAME,
+    subject: 'Connection Request Declined',
+    text: `${supervisor.username} has declined your connection request`,
+  }
+
+  transporter.sendMail(mailOptions, function (err, data) {
+    if (err) {
+      console.log('Error ' + err)
+      res.status(400).json({ message: 'Error sending the email' })
+    } else {
+      console.log('Email sent successfully')
+      res.status(200).json({ message: 'Email sent to reset password' })
+    }
+  })
 
   await Notification.create({
     user: studentId,
@@ -187,22 +281,71 @@ const declineConnectionRequest = asyncHandler(async (req, res) => {
 })
 
 // @desc    get connection request of student and user
-// @route   POST /supervisors/:supervisorId/connect
+// @route   Get
 // @access  Private
 const getConnectionsRequest = asyncHandler(async (req, res) => {
   const { supervisorId } = req.params
 
   // Check if the user exists
-  const user = await User.findById(supervisorId)
-    .populate('connectionRequest')
+  const user = await User.findById(supervisorId).lean()
+
+  if (!user) {
+    res.status(400).json({ message: 'User not found' })
+    return
+  }
+
+  const connectionRequests = user.connectionRequest.map((request) => {
+    return {
+      user: request.user,
+      message: request.message,
+    }
+  })
+
+  // Find all the users in the `connectionRequest` array and populate their information
+  const connectionRequestUsers = await User.find({
+    _id: { $in: connectionRequests.map((request) => request.user) },
+  })
+    .populate('topics')
+    .populate('domains')
     .lean()
-    .exec()
+
+  const connectionRequest = connectionRequestUsers.map((user) => {
+    const request = connectionRequests.find(
+      (request) => request.user.toString() === user._id.toString()
+    )
+    return {
+      user,
+      message: request.message,
+    }
+  })
+
+  res.status(200).json(connectionRequest)
+})
+
+// @desc    get connection request of student and user
+// @route   Get
+// @access  Private
+const getConnections = asyncHandler(async (req, res) => {
+  const { supervisorId } = req.params
+
+  // Check if the user exists
+  const user = await User.findById(supervisorId).lean()
 
   if (!user) {
     res.status(400).json({ message: 'User not found' })
   }
 
-  res.status(200).json(user.connectionRequest)
+  const connectionIds = user.connections
+
+  // Find all the users in the `connectionRequest` array and populate their information
+  const connections = await User.find({
+    _id: { $in: connectionIds },
+  })
+    .populate('topics')
+    .populate('domains')
+    .lean()
+
+  res.status(200).json(connections)
 })
 
 export {
@@ -212,4 +355,5 @@ export {
   declineConnectionRequest,
   getOtherSupervisors,
   getConnectionsRequest,
+  getConnections,
 }

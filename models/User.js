@@ -42,14 +42,25 @@ const userSchema = new mongoose.Schema(
     ],
     connectionRequest: [
       {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        user: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+        },
+        message: {
+          type: String,
+        },
       },
     ],
     setupComplete: {
       type: Boolean,
       default: false,
     },
+    availability: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Availability',
+      },
+    ],
   },
   { timestamps: true }
 )

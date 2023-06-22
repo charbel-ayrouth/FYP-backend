@@ -6,6 +6,7 @@ import {
   declineConnectionRequest,
   getOtherSupervisors,
   getConnectionsRequest,
+  getConnections,
 } from '../controllers/supervisorController.js'
 import verifyJWT from '../middleware/verifyJWT.js'
 import verifyRoles from '../middleware/verifyRoles.js'
@@ -18,10 +19,11 @@ const router = express.Router()
 router.get('/recommended/:userId', getRecommendedSupervisors)
 router.get('/other/:userId', getOtherSupervisors)
 
-router.post('/:supervisorId/connect', sendConnectionRequest)
 router.post('/:supervisorId/accept', acceptConnectionRequest)
+router.post('/:supervisorId/connect', sendConnectionRequest)
 router.post('/:supervisorId/decline', declineConnectionRequest)
 
 router.get('/:supervisorId/connections-request', getConnectionsRequest)
+router.get('/:supervisorId/connections', getConnections)
 
 export default router
