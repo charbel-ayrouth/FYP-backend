@@ -20,6 +20,7 @@ import notificationRoutes from './routes/notificationRoutes.js'
 import supervisorRoutes from './routes/supervisorRoutes.js'
 import nodemailer from 'nodemailer'
 import availabilityRoutes from './routes/availabilityRoutes.js'
+import appointmentRoutes from './routes/appointmentRoutes.js'
 
 const PORT = process.env.PORT || 3500
 const __filename = fileURLToPath(import.meta.url)
@@ -59,6 +60,7 @@ app.use('/profile', profileRoutes)
 app.use('/notifications', notificationRoutes)
 app.use('/supervisors', supervisorRoutes)
 app.use('/availability', availabilityRoutes)
+app.use('/appointments', appointmentRoutes)
 
 // routing bad request
 app.all('*', (req, res) => {

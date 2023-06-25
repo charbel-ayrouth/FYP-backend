@@ -1,5 +1,6 @@
 import Availability from '../models/Availability.js'
 import asyncHandler from 'express-async-handler'
+import User from '../models/User.js'
 
 // @desc Get supervisor availability
 // @route Get
@@ -7,6 +8,8 @@ import asyncHandler from 'express-async-handler'
 const getAvailability = asyncHandler(async (req, res) => {
   const { supervisorId } = req.params
   const slots = await Availability.find({ supervisor: supervisorId })
+    .populate('supervisor')
+    .exec()
 
   res.json(slots)
 })
@@ -74,9 +77,23 @@ const deleteAvailability = asyncHandler(async (req, res) => {
   res.json({ message: 'Availability deleted successfully' })
 })
 
+const getConnectedSupervisorsAvailability = asyncHandler(async (req, res) => {
+  const { studentId } = req.params
+  const student = await User.findById(studentId).populate('connections')
+
+  const supervisorIds = student.connections.map((connection) => connection._id)
+
+  const slots = await Availability.find({ supervisor: { $in: supervisorIds } })
+    .populate('supervisor')
+    .exec()
+
+  res.json(slots)
+})
+
 export {
   getAvailability,
   addAvailability,
   editAvailability,
   deleteAvailability,
+  getConnectedSupervisorsAvailability,
 }
