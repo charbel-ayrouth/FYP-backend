@@ -14,7 +14,7 @@ import ROLES from '../config/roles.js'
 
 const router = express.Router()
 
-// router.use(verifyJWT)
+router.use(verifyJWT)
 
 router.get('/recommended/:userId', getRecommendedSupervisors)
 router.get('/other/:userId', getOtherSupervisors)

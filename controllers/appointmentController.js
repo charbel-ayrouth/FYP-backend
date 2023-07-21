@@ -92,7 +92,6 @@ const addAppointments = asyncHandler(async (req, res) => {
   )
     .then(() => {
       res.status(200).json({ message: 'Emails sent successfully' })
-      res.status(201).json(savedAppointment)
     })
     .catch((error) => {
       res.status(400).json({ message: 'Error sending emails' })
